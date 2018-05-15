@@ -10,8 +10,25 @@
 </template>
 
 <script>
+import cookie from 'js-cookie';
+
 export default {
   name: 'App',
+  beforeMount() {
+    if (window.location.pathname === '/oauth-callback') {
+      const token = window.location.hash
+        .split('&')
+        .filter((el) => {
+          if (el.match('access_token') !== null) {
+            return true;
+          }
+          return false;
+        })[0]
+        .split('=')[1];
+      cookie.set('token', token);
+      window.location.replace('/#/home');
+    }
+  },
 };
 </script>
 
