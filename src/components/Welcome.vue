@@ -1,11 +1,18 @@
 <template>
   <div>
-    <h1>VISUALIZE</h1>
-    <p>{{ msg }}</p>
-    <md-button v-on:click="authenticate" id="app-btn-authenticate"
-      class="app-btn md-raised md-primary">
-      Login with Asana
-    </md-button>
+    <div class="md-layout">
+      <div class="md-layout-item md-size-25"></div>
+      <div class="md-layout-item app-main-form">
+        <img src="../assets/logo.png">
+        <h1>VISUALIZE</h1>
+        <p>{{ msg }}</p>
+        <md-button v-on:click="authenticate" id="app-btn-authenticate"
+          class="app-btn md-raised md-primary">
+          Login with Asana
+        </md-button>
+      </div>
+      <div class="md-layout-item md-size-25"></div>
+    </div>
   </div>
 </template>
 
@@ -38,6 +45,9 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+.app-main-form {
+  text-align: center;
+}
 
 #app-btn-authenticate {
   margin-top: 30px;
@@ -47,5 +57,4 @@ export default {
   background: linear-gradient(to top right, rgba(255,82,99,0.9) 10%,
     rgba(255,115,129,0.9) 65%, rgba(252,189,1,0.9) 125%);
 }
-
 </style>
