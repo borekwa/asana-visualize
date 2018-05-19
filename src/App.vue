@@ -10,7 +10,7 @@ import cookie from 'js-cookie';
 export default {
   name: 'App',
   beforeMount() {
-    if (window.location.pathname === '/oauth-callback') {
+    if (window.location.pathname === '/oauth-callback/') {
       const token = window.location.hash
         .split('&')
         .filter((el) => {

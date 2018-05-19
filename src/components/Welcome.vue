@@ -30,7 +30,7 @@ export default {
     authenticate() {
       const client = Asana.Client.create({
         clientId: '666122422161346',
-        redirectUri: 'http://localhost:8080/oauth-callback',
+        redirectUri: 'http://localhost:8080/oauth-callback/',
       });
       client.useOauth();
       client.authorize().then(() => {
