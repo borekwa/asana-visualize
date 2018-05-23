@@ -28,7 +28,7 @@
         <div class="md-layout">
           <div class="md-layout-item md-size-25"></div>
           <div class="md-layout-item">
-            <md-field>
+            <md-field v-show="projects.length > 0">
               <!-- I should be using md-autocomplate here, but
               there is an outstanding issue with the vue-material
               lib and it doesn't work.
@@ -51,71 +51,73 @@
       <div class="md-layout-item md-size-25"></div>
     </div>
 
-    <div class="md-layout">
-      <md-card class="md-layout-item md-size-20 chart-option-menu">
-        <md-card-header>
-          <div class="md-title">Y-Axis Values</div>
-        </md-card-header>
-        <md-card-content>
-          <md-field>
-            <label for="workspace">Aggregate</label>
-            <md-select v-model="selectedYField" disabled>
-              <md-option value="tasks">Tasks</md-option>
-              <md-option>Custom field 1</md-option>
-              <md-option>Custom field 1</md-option>
-            </md-select>
-          </md-field>
-          <md-field>
-            <label for="workspace">Aggregation Method</label>
-            <md-select v-model="selectedAggregation" disabled>
-              <md-option value="count">Count</md-option>
-              <md-option>Sum</md-option>
-              <md-option>Average</md-option>
-            </md-select>
-          </md-field>
-        </md-card-content>
-      </md-card>
+    <div v-show="selectedProject">
+      <div class="md-layout">
+        <md-card class="md-layout-item md-size-20 chart-option-menu">
+          <md-card-header>
+            <div class="md-title">Y-Axis Values</div>
+          </md-card-header>
+          <md-card-content>
+            <md-field>
+              <label for="workspace">Aggregate</label>
+              <md-select v-model="selectedYField" disabled>
+                <md-option value="tasks">Tasks</md-option>
+                <md-option>Custom field 1</md-option>
+                <md-option>Custom field 1</md-option>
+              </md-select>
+            </md-field>
+            <md-field>
+              <label for="workspace">Aggregation Method</label>
+              <md-select v-model="selectedAggregation" disabled>
+                <md-option value="count">Count</md-option>
+                <md-option>Sum</md-option>
+                <md-option>Average</md-option>
+              </md-select>
+            </md-field>
+          </md-card-content>
+        </md-card>
 
-      <md-card class="md-layout-item chart-container">
-        <canvas id="app-chart"></canvas>
-      </md-card>
+        <md-card class="md-layout-item chart-container">
+          <canvas id="app-chart"></canvas>
+        </md-card>
 
-      <md-card class="md-layout-item md-size-20 chart-option-menu">
-        <md-card-header>
-          <div class="md-title">Options</div>
-        </md-card-header>
+        <md-card class="md-layout-item md-size-20 chart-option-menu">
+          <md-card-header>
+            <div class="md-title">Options</div>
+          </md-card-header>
 
-        <md-card-content>
-          <md-field>
-            <label for="workspace">Group by</label>
-            <md-select v-model="selectedGroupByField" disabled>
-              <md-option value="customField1">Coming soon - custom fields</md-option>
-            </md-select>
-          </md-field>
-        </md-card-content>
-      </md-card>
-    </div>
+          <md-card-content>
+            <md-field>
+              <label for="workspace">Group by</label>
+              <md-select v-model="selectedGroupByField" disabled>
+                <md-option value="customField1">Coming soon - custom fields</md-option>
+              </md-select>
+            </md-field>
+          </md-card-content>
+        </md-card>
+      </div>
 
-    <div class="md-layout">
-      <div class="md-layout-item md-size-20 chart-option-menu"></div>
-      <md-card class="md-layout-item x-axis-options">
-        <md-card-header>
-          <div class="md-title">X-Axis Values</div>
-        </md-card-header>
+      <div class="md-layout">
+        <div class="md-layout-item md-size-20 chart-option-menu"></div>
+        <md-card class="md-layout-item x-axis-options">
+          <md-card-header>
+            <div class="md-title">X-Axis Values</div>
+          </md-card-header>
 
-        <md-card-content>
-          <md-field>
-            <label for="workspace">Attribute</label>
-            <md-select v-model="selectedXField" disabled>
-              <md-option value="createdAt">Created At</md-option>
-              <md-option>Custom field 1</md-option>
-              <md-option>Custom field 1</md-option>
-            </md-select>
-          </md-field>
-        </md-card-content>
+          <md-card-content>
+            <md-field>
+              <label for="workspace">Attribute</label>
+              <md-select v-model="selectedXField" disabled>
+                <md-option value="createdAt">Created At</md-option>
+                <md-option>Custom field 1</md-option>
+                <md-option>Custom field 1</md-option>
+              </md-select>
+            </md-field>
+          </md-card-content>
 
-      </md-card>
-      <div class="md-layout-item md-size-20 chart-option-menu"></div>
+        </md-card>
+        <div class="md-layout-item md-size-20 chart-option-menu"></div>
+      </div>
     </div>
   </div>
 </template>
