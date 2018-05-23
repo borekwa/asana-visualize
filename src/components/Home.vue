@@ -107,10 +107,9 @@
           <md-card-content>
             <md-field>
               <label for="workspace">Attribute</label>
-              <md-select v-model="selectedXField" disabled>
+              <md-select v-model="selectedXField">
                 <md-option value="createdAt">Created At</md-option>
-                <md-option>Custom field 1</md-option>
-                <md-option>Custom field 1</md-option>
+                <md-option value="completedAt">Completed At</md-option>
               </md-select>
             </md-field>
           </md-card-content>
@@ -141,7 +140,7 @@ export default {
       selectedProject: null,
       selectedGroupByField: 'customField1',
       selectedYField: 'tasks',
-      selectedXField: 'createdAt',
+      selectedXField: 'completedAt',
       selectedAggregation: 'count',
       template: AutocompleteItem,
     };
@@ -181,6 +180,60 @@ export default {
     change(text) {
       this.updateItems(text);
     },
+    renderChart(chartData) {
+      const ctx = document.getElementById('app-chart').getContext('2d');
+      this.chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartData.chartDates,
+          datasets: [{
+            label: '# of tasks',
+            data: chartData.chartValues,
+            backgroundColor: '#ff5263',
+          }],
+        },
+        options: {
+          scales: {
+            xAxes: [{
+              time: {
+                unit: 'week',
+              },
+              gridLines: {
+                display: false,
+              },
+            }],
+          },
+        },
+      });
+    },
+    updateChartData(dateAttribute = 'completedAt') {
+      let dates = [];
+      const roundedDates = [];
+      const values = [];
+      if (dateAttribute === 'createdAt') {
+        dates = this.tasks.map(task => task.created_at);
+      } else if (dateAttribute === 'completedAt') {
+        dates = this.tasks.map(task => task.completed_at);
+      }
+
+      dates.sort();
+      dates.forEach((date) => {
+        if (date) {
+          const week = moment(date).startOf('week').format('MM/DD/YY');
+          if (!roundedDates.includes(week)) {
+            roundedDates.push(week);
+            values.push(1);
+          } else {
+            const index = roundedDates.indexOf(week);
+            values[index] += 1;
+          }
+        }
+      });
+      return {
+        chartDates: roundedDates,
+        chartValues: values,
+      };
+    },
     fetchTasks(projectId) {
       this.client.tasks.findAll({
         project: projectId,
@@ -188,47 +241,8 @@ export default {
       }).then((tasks) => {
         tasks.fetch(1000).then((moreTasks) => {
           this.tasks = moreTasks;
-          const dates = this.tasks.map(task => task.created_at);
-          dates.sort();
-
-          const roundedDates = [];
-          const values = [];
-          dates.forEach((date) => {
-            const week = moment(date).startOf('week').format('MMM DD');
-            if (!roundedDates.includes(week)) {
-              roundedDates.push(week);
-              values.push(1);
-            } else {
-              const index = roundedDates.indexOf(week);
-              values[index] += 1;
-            }
-          });
-
-          const ctx = document.getElementById('app-chart').getContext('2d');
-          const chart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-              labels: roundedDates,
-              datasets: [{
-                label: '# of tasks',
-                data: values,
-                backgroundColor: '#ff5263',
-              }],
-            },
-            options: {
-              scales: {
-                xAxes: [{
-                  time: {
-                    unit: 'week',
-                  },
-                  gridLines: {
-                    display: false,
-                  },
-                }],
-              },
-            },
-          });
-          return chart;
+          const chartData = this.updateChartData();
+          this.renderChart(chartData);
         });
       });
     },
@@ -243,6 +257,19 @@ export default {
       } else {
         this.fetchTasks(project.id);
       }
+    },
+    selectedXField(dateField) {
+      let chartData = {};
+
+      if (dateField === 'createdAt') {
+        chartData = this.updateChartData('createdAt');
+      } else if (dateField === 'completedAt') {
+        chartData = this.updateChartData('completedAt');
+      }
+
+      this.chart.data.labels = chartData.chartDates;
+      this.chart.data.datasets[0].data = chartData.chartValues;
+      this.chart.update();
     },
   },
 };

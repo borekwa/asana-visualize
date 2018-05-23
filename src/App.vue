@@ -33,7 +33,7 @@ export default {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #151b26;
-  margin-top: 30px;
+  margin: 30px 10px;
 }
 
 img {
