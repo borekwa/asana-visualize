@@ -110,6 +110,7 @@
               <md-select v-model="selectedXField">
                 <md-option value="createdAt">Created At</md-option>
                 <md-option value="completedAt">Completed At</md-option>
+                <md-option value="dueDate">Due Date</md-option>
               </md-select>
             </md-field>
           </md-card-content>
@@ -180,15 +181,15 @@ export default {
     change(text) {
       this.updateItems(text);
     },
-    renderChart(chartData) {
+    renderChart() {
       const ctx = document.getElementById('app-chart').getContext('2d');
       this.chart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: chartData.chartDates,
+          labels: this.chartData.chartDates,
           datasets: [{
             label: '# of tasks',
-            data: chartData.chartValues,
+            data: this.chartData.chartValues,
             backgroundColor: '#ff5263',
           }],
         },
@@ -206,14 +207,21 @@ export default {
         },
       });
     },
-    updateChartData(dateAttribute = 'completedAt') {
+    updateChart() {
+      this.chart.data.labels = this.chartData.chartDates;
+      this.chart.data.datasets[0].data = this.chartData.chartValues;
+      this.chart.update();
+    },
+    updateChartData() {
       let dates = [];
       const roundedDates = [];
       const values = [];
-      if (dateAttribute === 'createdAt') {
+      if (this.selectedXField === 'createdAt') {
         dates = this.tasks.map(task => task.created_at);
-      } else if (dateAttribute === 'completedAt') {
+      } else if (this.selectedXField === 'completedAt') {
         dates = this.tasks.map(task => task.completed_at);
+      } else if (this.selectedXField === 'dueDate') {
+        dates = this.tasks.map(task => task.due_on);
       }
 
       dates.sort();
@@ -229,7 +237,7 @@ export default {
           }
         }
       });
-      return {
+      this.chartData = {
         chartDates: roundedDates,
         chartValues: values,
       };
@@ -237,12 +245,16 @@ export default {
     fetchTasks(projectId) {
       this.client.tasks.findAll({
         project: projectId,
-        opt_fields: 'created_at,completed,completed_at,custom_fields,name,notes',
+        opt_fields: 'created_at,completed,completed_at,due_on,custom_fields,name,notes',
       }).then((tasks) => {
         tasks.fetch(1000).then((moreTasks) => {
           this.tasks = moreTasks;
-          const chartData = this.updateChartData();
-          this.renderChart(chartData);
+          this.updateChartData();
+          if (this.chart) {
+            this.updateChart();
+          } else {
+            this.renderChart();
+          }
         });
       });
     },
@@ -259,17 +271,9 @@ export default {
       }
     },
     selectedXField(dateField) {
-      let chartData = {};
-
-      if (dateField === 'createdAt') {
-        chartData = this.updateChartData('createdAt');
-      } else if (dateField === 'completedAt') {
-        chartData = this.updateChartData('completedAt');
-      }
-
-      this.chart.data.labels = chartData.chartDates;
-      this.chart.data.datasets[0].data = chartData.chartValues;
-      this.chart.update();
+      this.selectedXField = dateField;
+      this.updateChartData();
+      this.updateChart();
     },
   },
 };
