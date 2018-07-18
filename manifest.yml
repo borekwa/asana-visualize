@@ -1,0 +1,4 @@
+applications:
+- name: asana-visualize
+  memory: 512M
+  instances: 2
