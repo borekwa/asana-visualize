@@ -89,8 +89,13 @@
           <md-card-content>
             <md-field>
               <label for="workspace">Group by</label>
-              <md-select v-model="selectedGroupByField" disabled>
-                <md-option value="customField1">Coming soon - custom fields</md-option>
+              <md-select value="groupByFields[0].custom_field.name" v-model="selectedGroupByField">
+                <md-option
+                  v-for="groupByField in groupByFields"
+                  v-bind:key="groupByField.id"
+                  v-bind:value="groupByField.custom_field.name">
+                  {{ groupByField.custom_field.name }}
+                </md-option>
               </md-select>
             </md-field>
           </md-card-content>
@@ -139,11 +144,13 @@ export default {
       tasks: [],
       selectedWorkspace: null,
       selectedProject: null,
-      selectedGroupByField: 'customField1',
       selectedYField: 'tasks',
       selectedXField: 'completedAt',
       selectedAggregation: 'count',
       template: AutocompleteItem,
+      groupByFields: [],
+      selectedGroupByField: '',
+      datasets: [],
     };
   },
   beforeMount() {
@@ -186,12 +193,8 @@ export default {
       this.chart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: this.chartData.chartDates,
-          datasets: [{
-            label: '# of tasks',
-            data: this.chartData.chartValues,
-            backgroundColor: '#ff5263',
-          }],
+          labels: this.chartData.labels,
+          datasets: this.chartData.datasets,
         },
         options: {
           scales: {
@@ -203,43 +206,138 @@ export default {
                 display: false,
               },
             }],
+            yAxes: [{
+              stacked: true,
+            }],
           },
         },
       });
     },
     updateChart() {
-      this.chart.data.labels = this.chartData.chartDates;
-      this.chart.data.datasets[0].data = this.chartData.chartValues;
+      this.chart.data.labels = this.chartData.labels;
+      this.chart.data.datasets = this.chartData.datasets;
       this.chart.update();
     },
     updateChartData() {
-      let dates = [];
-      const roundedDates = [];
-      const values = [];
+      let tasks = [];
       if (this.selectedXField === 'createdAt') {
-        dates = this.tasks.map(task => task.created_at);
+        tasks = this.tasks.map((task) => {
+          return {
+            date: task.created_at,
+            customFields: task.custom_fields,
+          };
+        });
       } else if (this.selectedXField === 'completedAt') {
-        dates = this.tasks.map(task => task.completed_at);
+        tasks = this.tasks.map((task) => {
+          return {
+            date: task.completed_at,
+            customFields: task.custom_fields,
+          };
+        });
       } else if (this.selectedXField === 'dueDate') {
-        dates = this.tasks.map(task => task.due_on);
+        tasks = this.tasks.map((task) => {
+          return {
+            date: task.due_on,
+            customFields: task.custom_fields,
+          };
+        });
       }
 
-      dates.sort();
-      dates.forEach((date) => {
-        if (date) {
-          const week = moment(date).startOf('week').format('MM/DD/YY');
+      this.groupByFields.forEach((field) => {
+        if (field.custom_field.name === this.selectedGroupByField) {
+          field.custom_field.enum_options.forEach((option) => {
+            const dataset = {
+              label: option.name,
+              data: [],
+              backgroundColor: option.color,
+            };
+            this.datasets.push(dataset);
+          }, this);
+        }
+      }, this);
+
+      tasks.sort((a, b) => {
+        if (a.date && b.date) {
+          return new Date(a.date) - new Date(b.date);
+        }
+        return 0;
+      });
+
+      const roundedDates = [];
+      const taskCounts = [];
+      this.datasets = [{
+        label: 'NULL',
+        data: [],
+        backgroundColor: '#313131',
+      }];
+      tasks.forEach((task) => {
+        if (task.date) {
+          const week = moment(task.date).startOf('week').format('MM/DD/YY');
           if (!roundedDates.includes(week)) {
             roundedDates.push(week);
-            values.push(1);
+            if (this.selectedGroupByField === '') {
+              taskCounts.push(1);
+            } else {
+              task.customFields.forEach((field) => {
+                if (field.name === this.selectedGroupByField) {
+                  console.log(field.enum_value);
+                  if (field.enum_value) {
+                    this.datasets.forEach((dataset) => {
+                      if (dataset.label === field.name) {
+                        dataset.data.push(1);
+                      }
+                    });
+
+                    // let matchingDataset = this.datasets.filter(dataset => {
+                    //   return dataset.label === field.name;
+                    // });
+                    // debugger;
+                    // if (matchingDataset[0]) {
+                    //   this.datasets[0].data.push(1);
+                    // }
+                  }
+                }
+              }, this);
+            }
           } else {
             const index = roundedDates.indexOf(week);
-            values[index] += 1;
+            if (this.selectedGroupByField === '') {
+              taskCounts[index] += 1;
+            } else {
+              task.customFields.forEach((field) => {
+                if (field.name === this.selectedGroupByField) {
+                  if (field.enum_value) {
+                    this.datasets.forEach((dataset) => {
+                      if (dataset.label === field.name) {
+                        dataset.data[index] += 1;
+                      }
+                    });
+                    // this.datasets.filter(dataset => {
+                    //   return dataset.label === field.name
+                    // });
+                    
+                    // this.datasets[0].data[index] += 1;
+                  }
+                }
+              }, this);
+            }
           }
         }
-      });
+      }, this);
+
+      if (this.selectedGroupByField === '') {
+        this.datasets = [{
+          label: '# of tasks',
+          data: taskCounts,
+          backgroundColor: '#ff5263',
+        }];
+      }
+
+      debugger;
+
       this.chartData = {
-        chartDates: roundedDates,
-        chartValues: values,
+        labels: roundedDates,
+        datasets: this.datasets,
       };
     },
     fetchTasks(projectId) {
@@ -268,10 +366,20 @@ export default {
         this.fetchProjects(this.selectedWorkspace);
       } else {
         this.fetchTasks(project.id);
+        this.client.customFieldSettings.findByProject(project.id)
+          .then((customFieldSettings) => {
+            this.groupByFields = customFieldSettings
+              .filter(customFieldSetting => customFieldSetting.custom_field.type === 'enum');
+          });
       }
     },
     selectedXField(dateField) {
       this.selectedXField = dateField;
+      this.updateChartData();
+      this.updateChart();
+    },
+    selectedGroupByField(groupByField) {
+      this.selectedGroupByField = groupByField;
       this.updateChartData();
       this.updateChart();
     },
